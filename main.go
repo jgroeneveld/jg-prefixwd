@@ -51,20 +51,29 @@ func do(run string, args ...string) error {
 	return nil
 }
 
-var regex = regexp.MustCompile("^(.+):(\\d+)")
+var regex = regexp.MustCompile("^\\s*(.+:\\d+)")
 
 func read(r io.Reader, w io.Writer, prefix string) {
 	wd, _ := os.Getwd()
 
 	s := bufio.NewScanner(r)
 	for s.Scan() {
-		line := s.Text()
-		if regex.Match([]byte(line)) {
-			line = wd + "/" + line
-		}
+		line := modifyLine(wd+"/", s.Text())
 		fmt.Fprintf(w, "%s\n", line)
 	}
 	if s.Err() != nil {
 		fmt.Printf("got err: %q", s.Err())
 	}
+}
+
+func modifyLine(prefix, line string) string {
+	matches := regex.FindStringSubmatchIndex(line)
+	if len(matches) > 0 {
+		i := matches[2]
+		str := line[0:i]
+		str += prefix
+		str += line[i:]
+		return str
+	}
+	return line
 }
